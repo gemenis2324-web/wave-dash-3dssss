@@ -3,6 +3,10 @@ SOURCES := source
 INCLUDES := include
 ARCH := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
+# Definir explícitamente el compilador de la 3DS
+CXX := arm-none-eabi-g++
+CC := arm-none-eabi-gcc
+
 CXXFLAGS := -g -Wall -O2 -mword-relocations $(ARCH) -ffunction-sections \
             -I$(DEVKITPRO)/libctru/include -I$(DEVKITPRO)/citro3d/include \
             -I$(DEVKITPRO)/citro2d/include -std=gnu++11 -fno-rtti -fno-exceptions
