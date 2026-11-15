@@ -1,0 +1,76 @@
+name: Build Wave Dash 3DS
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  DEVKITPRO: /opt/devkitpro
+  DEVKITARM: /opt/devkitpro/devkitARM
+  PATH: /opt/devkitpro/tools/bin:/opt/devkitpro/devkitARM/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkitarm:latest
+
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar herramientas de empaquetado (makerom)
+        run: |
+          apt-get update && apt-get install -y git build-essential wget
+          git clone --depth 1 https://github.com/3DSGuy/Project_CTR.git /tmp/Project_CTR
+          cd /tmp/Project_CTR/makerom
+          make
+          mkdir -p /opt/devkitpro/tools/bin
+          cp bin/makerom /opt/devkitpro/tools/bin/makerom
+          chmod +x /opt/devkitpro/tools/bin/makerom
+
+      - name: Crear archivo de configuración RSF
+        run: |
+          cat << 'RSF' > template.rsf
+          BasicInfo:
+            Title                   : "Wave Dash 3DS"
+            CompanyCode             : "00"
+            ProductCode             : "CTR-P-WD3S"
+            ContentType             : Application
+            Logo                    : Homebrew
+          TitleInfo:
+            UniqueId                : 0x0F3D6
+            Category                : Application
+          Option:
+            UseOnSD                 : true
+            EnableCompress          : true
+            FreeProductCode         : true
+            EnableCrypt             : false
+          AccessControlInfo:
+            CoreVersion             : 2
+            SystemMode              : 64MB
+            FileSystemAccess:
+              - DirectSdmc
+            ServiceAccessControl:
+              - APT:U
+              - fs:USER
+              - gsp::Gpu
+              - hid:USER
+              - ndm:u
+              - ptm:u
+              - ir:USER
+              - dsp::DSP
+          RSF
+
+      - name: Compilar proyecto
+        run: make
+
+      - name: Subir artefactos (.cia y .3dsx)
+        uses: actions/upload-artifact@v4
+        with:
+          name: WaveDash3DS-Binaries
+          path: |
+            *.3dsx
+            *.cia
